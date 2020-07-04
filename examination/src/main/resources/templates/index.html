@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<style>
+	#top{
+		width:600px;
+		border:1px solid;
+		margin:0 auto;
+	}
+	#text{
+		margin:0 auto;
+	}
+	#he{
+		margin:0 auto;
+		width:800px;
+		text-align: center;
+	}
+	#tex{
+		color:red;
+		
+	}
+	#tt{
+		width: 300px;
+		height: 300px;
+		position: fixed;
+		top: 80%;
+		left: 0;
+		list-style: none;
+		
+	}
+</style>
+</head>
+<body>
+	<div id="tt">
+		<ul>
+			<li>修改客户表时id改变将会转为新增</li>
+			<li>修改送货表时id改变将会转为新增</li>
+			<li>输入客户编号，点击查询按钮，可以实现客户与送货的一对多查询</li>
+		</ul>
+	</div>
+	<div id="he">
+	<h1>2006界分流机试题<br>
+	主要功能包括输入客户编号查询客户信息、新增保存、修改保存等功能
+	</h1>
+	<p>近一次的操作记录↓</p>
+	<div id="prin">
+	
+	</div>
+	<button id="clear">清空</button>
+	<p id="tex"></p>
+	<div id="main">
+		<div id="top">
+			<table>
+					<tr>
+						<td>客户编号</td>
+						<td><input type="text" v-model="info.khid"></td>
+						<td>客户名称</td>
+						<td><input type="text" v-model="info.khname"></td>
+					</tr>
+					<tr>
+						<td>联系人</td>
+						<td><input type="text" v-model="shtinfo.shlxr"></td>
+						<td>创建日期</td>
+						<td><input type="text" v-model="shtinfo.shcretime"></td>
+					</tr>
+					<tr>
+						<td>联系电话</td>
+						<td><input type="text" v-model="shtinfo.shphone"></td>
+						<td>送货地址</td>
+						<td><input type="text" v-model="shtinfo.sharess"></td>
+					</tr>
+					<tr>
+						<td>负责人(联系人)</td>
+						<td><input type="text" v-model="shtinfo.shlxr"></td>
+						<td>职务登记号</td>
+						<td><input type="text" v-model="shtinfo.shzwdjh"></td>
+					</tr>
+					<tr>
+						<td>送货ID</td>
+						<td><input type="text" v-model="shtinfo.shid"></td>
+					</tr>
+					<tr>
+						<td></td>
+						<td><button @click="getinfo()">查询</button></td>
+						<td><button @click="update()">保存</button></td>
+						<td></td>
+					</tr>
+			</table>
+		</div>
+			<table border=1 id="text">
+				<thead>
+					<tr>
+						<td>编号</td>
+						<td>地址</td>
+						<td>登记号</td>
+						<td>操作</td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="item in info.shts">
+						<td>{{item.shid}}</td>
+						<td>{{item.sharess}}</td>
+						<td>{{item.shzwdjh}}</td>
+						<td><button @click="getshtinfo(item.shid)">数据操作</button></td>
+					</tr>
+				</tbody>
+			</table>
+	</div>
+	</div>
+	<script th:src="@{/js/jquery-1.12.4.js}"></script>
+	<script th:src="@{/js/vue.js}"></script>
+	<script th:src="@{/js/bootstrap.min.js}"></script>
+	<script type="text/javascript">
+		$("#clear").click(function(){
+			$("#prin").html("");
+		})
+	
+		var vm = new Vue({
+			el:"#main",
+			data(){
+				return{
+					info:{},
+					shtinfo:{},
+					shid:0,
+					khid:0
+				}
+			},methods:{
+				getinfo(){
+					$.ajax({
+						url:"/main/getbykhid",
+						data:{
+							khid:vm.info.khid
+						},
+						success:function(resp){
+							vm.info = resp
+						}			
+					})
+					vm.khid=vm.info.khid
+				},
+				getshtinfo(shid){
+					vm.shid = shid
+					$.ajax({
+						url:"/main/getbyshid",
+						data:{
+							shid:shid
+						},
+						success:function(resp){
+							vm.shtinfo = resp
+						}			
+					})
+				},update(){
+					$("#prin").html("");
+					var sht = JSON.stringify(vm.shtinfo);
+					var kht = JSON.stringify(vm.info);
+					if(vm.shid==vm.shtinfo.shid){
+						$.ajax({
+							url:"/main/updatesht",
+							contentType:"application/json;charset=utf-8",
+							type:"PUT",
+							data:sht		
+						})
+						$("#prin").append("<p id='tex'>正在修改送货表</p>")
+					}else{
+						$("#prin").append("<p id='tex'>正在新增送货表</p>")
+						this.insertsh();
+					}
+					if(vm.khid==vm.info.khid){
+						$("#prin").append("<p id='tex'>正在修改客户表</p>")
+					$.ajax({
+						url:"/main/updatekht",
+						contentType:"application/json;charset=utf-8",
+						type:"PUT",
+						data:kht		
+					})
+					}else{
+						$("#prin").append("<p id='tex'>正在新增客户表</p>")
+						this.insertkh();
+					}
+					
+					
+					this.getshtinfo(vm.shid)
+					this.getinfo(vm.khid)
+					
+				},insertkh(){
+					var kht = JSON.stringify(vm.info);
+					if(vm.khid!=vm.info.khid){
+					$.ajax({
+						url:"/main/insertkh",
+						contentType:"application/json;charset=utf-8",
+						type:"POST",
+						data:kht
+					})
+					}
+				},insertsh(){	
+					vm.shtinfo.shkhid=vm.khid
+					var sht = JSON.stringify(vm.shtinfo);
+					if(vm.shid!=vm.shtinfo.shid){
+					$.ajax({
+						url:"/main/insertsh",
+						contentType:"application/json;charset=utf-8",
+						type:"POST",
+						data:sht
+					})
+					}
+				}
+			},created(){
+			}			
+		})	
+	</script>
+</body>
+</html>
